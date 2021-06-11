@@ -2,6 +2,9 @@ topseller-tweet
 
 # for developer
 
+![Untitled (2)のコピー](https://user-images.githubusercontent.com/37532269/121746904-8cc58600-cb41-11eb-9387-12723fb3af3d.png)
+
+
 ## ! Prerequisite !
 
 - Register with twitter developer to create an app and get a key and token.
