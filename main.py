@@ -1,13 +1,9 @@
 from datetime import datetime, timedelta
 import io
-from logging import exception
 import os
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from distutils.util import strtobool
-import requests
-import time
-from bs4 import BeautifulSoup, Tag
 from google.cloud import storage
 import pandas as pd
 
@@ -126,8 +122,7 @@ def main(event, context):
         if 5 < tweetCount:
             break
 
-
-        if len(agoDf) == 0 or not index in agoDf.keys():
+        if len(agoDf) == 0 or not index in list(agoDf.index):
             text = '''
 Amazonランキング急上昇中！！
 #Amazon #アマゾン #お買い得
@@ -140,6 +135,7 @@ Amazonランキング急上昇中！！
                 url=nowItem['affUrl'],
                 date=nowCreatedTime.strftime('%Y/%m/%d %H:%M:%S')).strip()
             isTweet = account.tweet(text)
+            print("{} {} tweeted rankin".format(nowItem['rank'], index))
             tweetCount+=1
 
         elif agoDf.at[index, 'rank'][1:] > nowItem['rank'][1:]:
@@ -159,10 +155,11 @@ Amazonランキング上昇中！
                 url=nowItem['affUrl'],
                 date=nowCreatedTime.strftime('%Y/%m/%d %H:%M:%S')).strip()
             isTweet = account.tweet(text)
+            print("{} → {} {} tweeted".format(agoDf.at[index, 'rank'][1:], nowItem['rank'], index))
             tweetCount+=1
 
         else:
-            print("{} is not target".format(nowItem['title']))
+            print("{} is not target".format(index))
 
     if isTweet:
 
