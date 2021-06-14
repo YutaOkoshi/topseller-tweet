@@ -12,7 +12,7 @@ class Category:
         # カテゴリID	カテゴリー名	有効か	クロール間隔(h)	データの最終更新日時	最終ツイート日時	ツイートするアカウントID
         self.category_id = record[0]
         self.is_enable = strtobool(record[2])
-        self.crawl_duration = record[3]
+        self.crawl_duration = int(record[3] or 0)
         if re.match(
             r'[0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}',
                 record[4]):

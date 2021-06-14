@@ -47,7 +47,7 @@ def getTargetCategory():
     return res
 
 
-def updateLastTweetDatetime(categoryRow:int, datetime:datetime):
+def updateLastTweetDatetime(categoryRow: int, datetime: datetime):
     MainSheet.update_cell(
         categoryRow,
         # F列が最終ツイート日時の前提で6にしている
@@ -56,6 +56,7 @@ def updateLastTweetDatetime(categoryRow:int, datetime:datetime):
         datetime.strftime('%Y/%m/%d %H:%M:%S'))  # (行,列,更新値)
     pass
 
+
 def main(event, context):
 
     twitterAccounts = getTwitterAccount()
@@ -63,27 +64,36 @@ def main(event, context):
 
     print('Event ID: {}'.format(context.event_id))
     print('File: {}'.format(event['name']))
-    # 2021-06-04T18:31:30.967Zなので区切る
-    nowCreatedTime = datetime.strptime(
-        event['updated'][:19], '%Y-%m-%dT%H:%M:%S').astimezone(env.JST)
-    agoCreatedTime = nowCreatedTime + timedelta(hours=-1)
 
     filename = os.path.basename(event['name'])
 
     account = None
-    for category in categories:
-        if category.category_id == filename[:-4]:
-            account = category.getTwitterAccount(twitterAccounts)
+    category = None
+    for cate in categories:
+        if cate.category_id == filename[:-4]:
+            account = cate.getTwitterAccount(twitterAccounts)
             if account is None:
                 print("{} category is not set twitter account id".format(
                     filename[:-4]))
                 return
             else:
                 print("category name : "+filename[:-4])
+                category = cate
                 break
     if account is None:
-        print("Unexpected error occurred.")
+        print("Unexpected account error occurred.")
         return
+    if category is None:
+        print("Unexpected category error occurred.")
+        return
+
+    # 2021-06-04T18:31:30.967Zなので区切る
+    nowCreatedTime = datetime.strptime(
+        event['updated'][:19], '%Y-%m-%dT%H:%M:%S').astimezone(env.JST)
+    print("{} category duration is {} hours".format(
+        str(category), category.crawl_duration))
+
+    agoCreatedTime = nowCreatedTime - timedelta(hours = category.crawl_duration)
 
     client = storage.Client()
     bucket = client.get_bucket(env.BUCKET_NAME)
@@ -98,11 +108,11 @@ def main(event, context):
         return
 
     agoBlob = bucket.blob("{}/{}/{}/{}/{}".format(
-                          agoCreatedTime.year, agoCreatedTime.month,
-                          agoCreatedTime.day, agoCreatedTime.hour, filename))
+        agoCreatedTime.year, agoCreatedTime.month,
+        agoCreatedTime.day, agoCreatedTime.hour, filename))
     nowBlob = bucket.blob("{}/{}/{}/{}/{}".format(
-                          nowCreatedTime.year, nowCreatedTime.month,
-                          nowCreatedTime.day, nowCreatedTime.hour, filename))
+        nowCreatedTime.year, nowCreatedTime.month,
+        nowCreatedTime.day, nowCreatedTime.hour, filename))
 
     agoText = agoBlob.download_as_text()
     nowText = nowBlob.download_as_text()
@@ -114,7 +124,7 @@ def main(event, context):
         raise ValueError(
             "error! index is not unique\ncheck to {} file".format(filename))
 
-    isTweet=False
+    isTweet = False
     tweetCount = 0
     for index, nowItem in nowDf.iterrows():
 
@@ -136,7 +146,7 @@ Amazonランキング急上昇中！！
                 date=nowCreatedTime.strftime('%Y/%m/%d %H:%M:%S')).strip()
             isTweet = account.tweet(text)
             print("{} {} tweeted rankin".format(nowItem['rank'], index))
-            tweetCount+=1
+            tweetCount += 1
 
         elif agoDf.at[index, 'rank'][1:] > nowItem['rank'][1:]:
             text = '''
@@ -155,8 +165,9 @@ Amazonランキング上昇中！
                 url=nowItem['affUrl'],
                 date=nowCreatedTime.strftime('%Y/%m/%d %H:%M:%S')).strip()
             isTweet = account.tweet(text)
-            print("{} → {} {} tweeted".format(agoDf.at[index, 'rank'][1:], nowItem['rank'], index))
-            tweetCount+=1
+            print("{} → {} {} tweeted".format(
+                agoDf.at[index, 'rank'][1:], nowItem['rank'], index))
+            tweetCount += 1
 
         else:
             print("{} is not target".format(index))
